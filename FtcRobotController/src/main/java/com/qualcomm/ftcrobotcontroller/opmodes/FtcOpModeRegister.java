@@ -31,14 +31,23 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 package com.qualcomm.ftcrobotcontroller.opmodes;
 
-import com.clwillingham.ftcrobot.opmodes.TestOpMode;
+import android.util.Log;
+
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.OpModeManager;
 import com.qualcomm.robotcore.eventloop.opmode.OpModeRegister;
+
+import java.io.IOException;
+import java.util.Enumeration;
+
+import dalvik.system.DexFile;
+import dalvik.system.PathClassLoader;
 
 /**
  * Register Op Modes
  */
 public class FtcOpModeRegister implements OpModeRegister {
+  private static final String TAG = "FtcOpModeRegister";
 
   /**
    * The Op Mode Manager will call this method when it wants a list of all
@@ -58,44 +67,34 @@ public class FtcOpModeRegister implements OpModeRegister {
 
 //    manager.register("NullOp", NullOp.class);
 
+    PathClassLoader classLoader = (PathClassLoader) Thread.currentThread().getContextClassLoader();
+    //getClass().getClass();
+    try {
+      DexFile df = new DexFile(manager.getHardwareMap().appContext.getPackageCodePath());
+      for (Enumeration<String> iter = df.entries(); iter.hasMoreElements();) {
+        String s = iter.nextElement();
+//        Log.d(TAG, "register: " + s);
+        if(s.matches("com.team\\d+.ftcrobot.opmodes.\\w+")){
+          Log.d(TAG, "register: " + s);
+          Class<?> cls = getClass().getClassLoader().loadClass(s);
+          if(cls != null && cls.isAssignableFrom(OpMode.class)){
+            String name = cls.getSimpleName();
+            if(cls.isAnnotationPresent(Register.class)) {
+              name = cls.getAnnotation(Register.class).value();
+            }
+            Log.d(TAG, "registry name: " + name);
+            manager.register(name, cls);
+          }
+        }
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    } catch (ClassNotFoundException e) {
+      e.printStackTrace();
+      Log.e(TAG, "IF YOUR SEEING THIS MESSAGE ITS PROBABLY NOT YOUR FAULT, please post an issue report on github");
+    }
+
     //manager.register("MatrixK9TeleOp", MatrixK9TeleOp.class);
 //    manager.register("K9TeleOp", K9TeleOp.class);
-//    manager.register("K9Line", K9Line.class);
-//    manager.register ("PushBotAuto", PushBotAuto.class);
-//    manager.register ("PushBotManual", PushBotManual.class);
-
-    manager.register("TestOpMode", TestOpMode.class);
-
-    /*
-     * Uncomment any of the following lines if you want to register an op mode.
-     */
-//    manager.register("MR Gyro Test", MRGyroTest.class);
-
-    //manager.register("AdafruitRGBExample", AdafruitRGBExample.class);
-    //manager.register("ColorSensorDriver", ColorSensorDriver.class);
-
-    //manager.register("IrSeekerOp", IrSeekerOp.class);
-    //manager.register("CompassCalibration", CompassCalibration.class);
-    //manager.register("I2cAddressChangeExample", LinearI2cAddressChange.class);
-
-
-    //manager.register("NxtTeleOp", NxtTeleOp.class);
-
-    //manager.register("LinearK9TeleOp", LinearK9TeleOp.class);
-    //manager.register("LinearIrExample", LinearIrExample.class);
-
-
-    //manager.register ("PushBotManual1", PushBotManual1.class);
-    //manager.register ("PushBotAutoSensors", PushBotAutoSensors.class);
-    //manager.register ("PushBotIrEvent", PushBotIrEvent.class);
-
-    //manager.register ("PushBotManualSensors", PushBotManualSensors.class);
-    //manager.register ("PushBotOdsDetectEvent", PushBotOdsDetectEvent.class);
-    //manager.register ("PushBotOdsFollowEvent", PushBotOdsFollowEvent.class);
-    //manager.register ("PushBotTouchEvent", PushBotTouchEvent.class);
-
-    //manager.register("PushBotDriveTouch", PushBotDriveTouch.java);
-    //manager.register("PushBotIrSeek", PushBotIrSeek.java);
-    //manager.register("PushBotSquare", PushBotSquare.java);
   }
 }
